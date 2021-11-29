@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+
+<script>
+  class Vue{
+    constructor(options) {
+    //  1. 保存数据
+      this.$options=options;
+      this.$data=options.data;
+      this.$el=options.$el;
+
+    //  2 将data添加到响应式系统中
+      new Observer(this.$data)
+
+    //  3 代理 this.$data 的数据
+      Object.keys(this.$data).forEach(key=>{
+        this._proxy(key)
+      })
+
+    //  4 处理el
+      new Compiler(this.$el,this)
+
+    }
+  }
+
+
+  class Observer{
+    constructor(data) {
+      this.data=data;
+
+      Object.keys(data).forEach(key=>{
+        this.defineReactive(this.data,key,data[key])
+      })
+    }
+
+
+    defineReactive(data,key,value){
+      //  一个属性对应一个 dep 对象
+      const dep=new Dep()
+      Object.defineProperty(data,key,{
+        enumerable:true,
+        configurable:true,
+
+        get() {
+          if (Dep.target){
+            dep.addSub(Dep.target)
+          }
+          return value
+        },
+
+        set(newvalue) {
+          if (newvalue===value){
+            return
+          }
+
+          value=newvalue
+          dep.notify()
+        }
+      })
+    }
+
+  }
+
+
+  class Dep{
+    constructor() {
+      this.subs=[]
+    }
+
+    addSub(sub){
+      this.subs.push(sub)
+    }
+
+    notify(){
+      this.subs.forEach(sub=>{
+        sub.update()
+      })
+    }
+  }
+
+
+
+  class Compiler{
+    constructor(el,vm) {
+      this.el=document.querySelector(el);
+      this.vm=vm;
+
+      this.frag=this._createFragment()
+      this.el.appendChild(this.frag)
+    }
+
+
+    _createFragment(){
+      const frag=document.createDocumentFragment()
+
+      let child;
+      while (child=this.el.firstChild){
+        this._compile(child)
+        frag.appendChild(child)
+      }
+      return frag
+    }
+
+  }
+
+
+</script>
+
+
+<script>
+  const app=new Vue({
+    el:'#app',
+    data:{
+      message:'哈哈哈'
+    }
+  })
+</script>
+</body>
+</html>

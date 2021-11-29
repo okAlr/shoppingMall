@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Title</title>
+</head>
+<body>
+<!--
+    问题；
+      - app.message 修改数据，Vue内部是如何监听 message 数据的改变
+         Object.defineProperty ->监听对象属性的改变
+
+      - 当数据发生改变的时候，Vue是如何知道要通知哪些人，界面发生刷新
+         发布订阅者模式
+-->
+<div id="app">
+  {{message}}
+  {{message}}
+  {{message}}
+
+  {{name}}
+</div>
+
+<script src="./node_modules/vue/dist/vue.js"></script>
+
+<script>
+  // 过程
+  const obj = {
+    message: '哈哈哈',
+    name:'Abby'
+  }
+
+  Object.keys(obj).forEach(key => {
+    let value = obj[key]
+
+    Object.defineProperty(obj, key, {
+      set(newValue) {
+        // 监听 key 的改变
+        console.log('监听' + key + '改变')
+        value = newValue
+
+        dep.notify()
+
+      //  谁在用这个key，就要通知谁
+      //  有谁在用呢？
+      //  根据解析html代码，获取到哪些人在用属性
+      //  张三，李四，王五
+      },
+
+      get() {
+        // 获取可以对应的值
+        console.log('获取可以对应的值')
+
+        //  通知张三，李四，王五，--> 全部都要update
+
+        return value
+
+
+      }
+    })
+  })
+
+
+//  发布订阅者模式
+//  Dep --- dependency , 表示对属性有依赖的集合
+//  sub --- 记录所有订阅者
+//  发布者
+  class Dep{
+    constructor() {
+      // subs 这个数组记录的是 订阅这个属性的元素集合
+      this.subs=[]
+    }
+
+    addSub(watcher){
+      this.subs.push(watcher)
+    }
+
+    notify(){
+      this.subs.forEach(item=>{
+        item.update()
+      })
+    }
+
+  }
+
+  // 订阅者
+  class watcher{
+    constructor(name) {
+      this.name=name
+    }
+
+    update(){
+      console.log(this.name+'发生 update')
+    }
+  }
+
+  const dep=new Dep()
+  const w1=new watcher('张三')
+  dep.addSub(w1)
+  const w2=new watcher('李四')
+  dep.addSub(w2)
+  const w3=new watcher('王五')
+  dep.addSub(w3)
+
+  dep.notify()
+
+</script>
+<script>
+  const App = new Vue({
+    el: '#app',
+    data: {
+      message: '哈哈哈',
+      name:'Abby'
+    }
+  })
+</script>
+</body>
+</html>
